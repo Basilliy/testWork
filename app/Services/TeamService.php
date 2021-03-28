@@ -14,42 +14,66 @@ class TeamService
         return Team::all()->toArray();
     }
 
-    public function getTeamStatistic(): array
+    public function getTeamStatistic(int $weekNumber = null): array
     {
-        return Team::query()
-            ->select(
-                'teams.*',
+        $teams = Team::query()->get()->toArray();
 
-                DB::raw('SUM(IF(g_first.first_team_id = teams.id, 1, 0)) +
-                    SUM(IF(g_second.second_team_id = teams.id, 1, 0)) as all_games'),
+        $games = Game::query()
+            ->when($weekNumber, static function($query, $weekNumber) {
+                return $query->where('game_week', '<=', $weekNumber);
+            })
+            ->get()->toArray();
 
-                DB::raw('SUM(IF(g_first.first_team_id = teams.id AND
-                    g_first.first_team_result > g_first.second_team_result, 1, 0)) +
-                    SUM(IF(g_second.second_team_id = teams.id AND
-                    g_second.first_team_result < g_second.second_team_result, 1, 0)) as win_games'),
+        foreach ($teams as &$team) {
+            $team['all_games'] = 0;
+            $team['goals_count'] = 0;
+            $team['win_games'] = 0;
+            $team['draw_games'] = 0;
+            $team['lose_games'] = 0;
 
-                DB::raw('SUM(IF(g_first.first_team_id = teams.id AND
-                    g_first.first_team_result = g_first.second_team_result, 1, 0)) +
-                    SUM(IF(g_second.second_team_id = teams.id AND
-                    g_second.first_team_result = g_second.second_team_result, 1, 0)) as draw_games'),
+            foreach ($games as $game) {
+                if ($game['first_team_id'] === $team['id']) {
+                    $team['all_games'] = isset($team['all_games']) ? $team['all_games'] + 1 : 1;
+                    $team['goals_count'] = isset($team['goals_count']) ?
+                        $team['goals_count'] + $game['first_team_result'] :
+                        $game['first_team_result'];
 
-                DB::raw('SUM(IF(g_first.first_team_id = teams.id AND
-                    g_first.first_team_result < g_first.second_team_result, 1, 0)) +
-                    SUM(IF(g_second.second_team_id = teams.id AND
-                    g_second.first_team_result > g_second.second_team_result, 1, 0)) as lose_games'),
+                    if ($game['first_team_result'] > $game['second_team_result']) {
+                        $team['win_games'] = isset($team['win_games']) ? $team['win_games'] + 1 : 1;
+                    }
 
-                DB::raw('SUM(IF(g_first.first_team_id = teams.id, g_first.first_team_result, 0)) +
-                    SUM(IF(g_second.second_team_id = teams.id, g_second.second_team_result, 0)) as goals_count')
+                    if ($game['first_team_result'] === $game['second_team_result']) {
+                        $team['draw_games'] = isset($team['draw_games']) ? $team['draw_games'] + 1 : 1;
+                    }
 
+                    if ($game['first_team_result'] < $game['second_team_result']) {
+                        $team['lose_games'] = isset($team['lose_games']) ? $team['lose_games'] + 1 : 1;
+                    }
+                }
 
-            )
-            ->leftJoin(DB::raw((new Game())->getTable(). ' as g_first'), 'teams.id', '=',
-                'g_first.first_team_id')
-            ->leftJoin(DB::raw((new Game())->getTable(). ' as g_second'), 'teams.id', '=',
-                'g_second.second_team_id')
-            ->groupBy('teams.id')
-            ->get()
-            ->toArray();
+                if ($game['second_team_id'] === $team['id']) {
+                    $team['all_games'] = isset($team['all_games']) ? $team['all_games'] + 1 : 1;
+                    $team['goals_count'] = isset($team['goals_count']) ?
+                        $team['goals_count'] + $game['second_team_result'] :
+                        $game['second_team_result'];
+
+                    if ($game['second_team_result'] > $game['first_team_result']) {
+                        $team['win_games'] = isset($team['win_games']) ? $team['win_games'] + 1 : 1;
+                    }
+
+                    if ($game['second_team_result'] === $game['first_team_result']) {
+                        $team['draw_games'] = isset($team['draw_games']) ? $team['draw_games'] + 1 : 1;
+                    }
+
+                    if ($game['second_team_result'] < $game['first_team_result']) {
+                        $team['lose_games'] = isset($team['lose_games']) ? $team['lose_games'] + 1 : 1;
+                    }
+                }
+            }
+
+        }
+
+     return $teams;
     }
 
     public function addNewTeam(array $team_info): void

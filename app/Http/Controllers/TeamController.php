@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Game\GameStatisticRequest;
 use App\Http\Requests\Team\CreateTeamRequest;
 use App\Http\Requests\Team\UpdateTeamRequest;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class TeamController extends Controller
 {
@@ -52,5 +54,10 @@ class TeamController extends Controller
         $this->teamService->deleteTeamById($id);
 
         return redirect(route('team.list'));
+    }
+
+    public function statistic(GameStatisticRequest $request)
+    {
+        return response()->json($this->teamService->getTeamStatistic($request->week), Response::HTTP_OK);
     }
 }

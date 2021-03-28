@@ -15,7 +15,8 @@ class Game extends Model
         'first_team_id',
         'first_team_result',
         'second_team_id',
-        'second_team_result'
+        'second_team_result',
+        'game_week'
     ];
 
     protected $with = [

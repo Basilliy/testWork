@@ -16,19 +16,21 @@ class CreateGamesTable extends Migration
         Schema::create('teams_games', function (Blueprint $table) {
             $table->id();
 
-            $table->integer('first_team_id')->unsigned();
+            $table->bigInteger('first_team_id')->unsigned();
             $table->foreign('first_team_id')
                 ->references('id')
                 ->on('teams')
                 ->onDelete('cascade');
             $table->integer('first_team_result');
 
-            $table->integer('second_team_id')->unsigned();
+            $table->bigInteger('second_team_id')->unsigned();
             $table->foreign('second_team_id')
                 ->references('id')
                 ->on('teams')
                 ->onDelete('cascade');
             $table->integer('second_team_result');
+
+            $table->integer('game_week');
 
             $table->timestamps();
         });
@@ -41,6 +43,6 @@ class CreateGamesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('games');
+        Schema::dropIfExists('teams_games');
     }
 }
